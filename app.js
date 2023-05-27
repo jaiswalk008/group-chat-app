@@ -2,7 +2,8 @@ const express = require('express');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const app = express();
-
+var LocalStorage = require('node-localstorage').LocalStorage,
+localStorage = new LocalStorage('./scratch');
 app.use(bodyParser.urlencoded({ extended: true }));
 
 let users = {}; // Object to store usernames
@@ -14,26 +15,26 @@ app.get('/login', (req, res, next) => {
       <title>User login</title>
     </head>
     <body>
-      <form action="/" method="POST" id="form">
+      <form action="/" id="form">
         <input type="text" name="username" placeholder="username"><br>
         <button type="submit">Submit</button>
       </form>
     </body>
+    <script>
+      const form = document.getElementById('form');
+      form.addEvenetListener('submit',(e)=>{
+        localStorage.setItem('username',e.target.username.value);
+      })
+      </script>
     </html>
   `);
 });
-
+const userName = localStorage.getItem('username');
+console.log(userName);
 app.post('/', (req, res, next) => {
-  const message = req.body.message;
-  const username = req.body.username;
+  const message =userName+":"+ req.body.message;
   
-  if (username) {
-    users[req.ip] = username; // Store the username for the current IP
-  }
-  
-  const formattedMessage = getMessageWithUsername(req.ip, message);
-  
-  fs.appendFile('message.txt', formattedMessage + '\n', (err) => {
+  fs.appendFile('message.txt', message + '\n', (err) => {
     if (err) {
       console.log(err.message);
     }
@@ -49,7 +50,7 @@ app.get('/', (req, res, next) => {
     } else {
       const chatHistory = data || 'Send a message to start the conversation';
       
-      res.status(200).send(`
+      res.send(`
         <html>
         <head>
           <title>Group Chat</title>
@@ -70,15 +71,5 @@ app.get('/', (req, res, next) => {
     }
   });
 });
-
-function getMessageWithUsername(ip, message) {
-  const username = users[ip];
-  
-  if (username) {
-    return `${username}: ${message}`;
-  }
-  
-  return message;
-}
 
 app.listen(4000);
