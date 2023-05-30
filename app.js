@@ -2,37 +2,30 @@ const express = require('express');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const app = express();
-var LocalStorage = require('node-localstorage').LocalStorage,
-localStorage = new LocalStorage('./scratch');
 app.use(bodyParser.urlencoded({ extended: true }));
 
-let users = {}; // Object to store usernames
+
+//login page
 
 app.get('/login', (req, res, next) => {
-  res.send(`
-    <html>
-    <head>
-      <title>User login</title>
-    </head>
+  res.send(`<html><head><title>User login</title></head>
     <body>
-      <form action="/" id="form">
-        <input type="text" name="username" placeholder="username"><br>
+      <form action="/login" method="POST" onSubmit='localStorage.setItem("username", document.getElementById("username").value)'>
+        <input type="text" name="username" id="username" placeholder="username"><br>
         <button type="submit">Submit</button>
       </form>
     </body>
-    <script>
-      const form = document.getElementById('form');
-      form.addEvenetListener('submit',(e)=>{
-        localStorage.setItem('username',e.target.username.value);
-      })
-      </script>
     </html>
   `);
 });
-const userName = localStorage.getItem('username');
-console.log(userName);
-app.post('/', (req, res, next) => {
-  const message =userName+":"+ req.body.message;
+
+app.post('/login',(req,res)=>{
+  res.redirect('/');
+})
+
+//post request for writing into the file
+app.post('/', (req, res) => {
+  const message =req.body.username+":"+ req.body.message;
   
   fs.appendFile('message.txt', message + '\n', (err) => {
     if (err) {
@@ -43,27 +36,27 @@ app.post('/', (req, res, next) => {
   res.redirect('/');
 });
 
-app.get('/', (req, res, next) => {
-  fs.readFile('message.txt', 'utf-8', (err, data) => {
+//get request for reading from the file
+app.get('/', (req, res) => {
+  fs.readFile('message.txt', (err, data) => {
     if (err) {
       console.log(err.message);
     } else {
-      const chatHistory = data || 'Send a message to start the conversation';
+      const chatHistory = data ;
       
       res.send(`
-        <html>
-        <head>
-          <title>Group Chat</title>
-        </head>
+        <html><head><title>Group Chat</title></head>
         <body>
           <h2>Group Chat</h2>
           <div>
-            <h3>Chat History:</h3>
+            <h3>Chat:</h3>
             <pre>${chatHistory}</pre>
           </div>
-          <form action="/" method="POST">
-            <input type="text" name="message" placeholder="Enter Message"><br>
-            <button type="submit">Send</button>
+          <form action="/" method="POST" onSubmit='document.getElementById("username").value=localStorage.getItem("username")'>
+          <input type='hidden' name='username' id='username'><br>
+          <input type='text' name='message' id="message" placeholder="Enter a message">
+          
+          <button type="submit">Send</button>
           </form>
         </body>
         </html>
